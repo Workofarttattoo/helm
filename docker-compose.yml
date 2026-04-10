@@ -1,0 +1,102 @@
+# ============================================================================
+# HELM - Docker Compose for local development & production
+# ============================================================================
+# Usage:
+#   make up          # Start all services
+#   make down        # Stop all services
+#   make logs        # View logs
+# ============================================================================
+
+services:
+  # ---------- HELM Benchmark Server (Results UI) ----------
+  helm-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: helm-server
+    ports:
+      - "${HELM_SERVER_PORT:-8000}:8000"
+    volumes:
+      - benchmark_data:/data/benchmark_output
+      - cache_data:/data/cache
+    environment:
+      - HELM_SUITE=${HELM_SUITE:-default}
+      - HELM_OUTPUT_DIR=/data/benchmark_output
+      - HELM_CACHE_DIR=/data/cache
+    env_file:
+      - .env
+    command: >
+      uv run helm-server
+        --port 8000
+        --suite ${HELM_SUITE:-default}
+        --output-path /data/benchmark_output
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ---------- HELM Proxy Server (API Gateway) ----------
+  helm-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: helm-proxy
+    ports:
+      - "${HELM_PROXY_PORT:-1959}:1959"
+    volumes:
+      - cache_data:/data/cache
+    environment:
+      - HELM_CACHE_DIR=/data/cache
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - TOGETHER_API_KEY=${TOGETHER_API_KEY:-}
+    env_file:
+      - .env
+    command: >
+      uv run crfm-proxy-server
+        --port 1959
+        --workers ${HELM_PROXY_WORKERS:-4}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1959/api/general_info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ---------- HELM Runner (Benchmark Executor) ----------
+  helm-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: helm-runner
+    volumes:
+      - benchmark_data:/data/benchmark_output
+      - cache_data:/data/cache
+    environment:
+      - HELM_SUITE=${HELM_SUITE:-default}
+      - HELM_OUTPUT_DIR=/data/benchmark_output
+      - HELM_CACHE_DIR=/data/cache
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - TOGETHER_API_KEY=${TOGETHER_API_KEY:-}
+    env_file:
+      - .env
+    command: >
+      uv run helm-run
+        --suite ${HELM_SUITE:-default}
+        --max-eval-instances ${HELM_MAX_EVAL_INSTANCES:-100}
+        --output-path /data/benchmark_output
+    profiles:
+      - run  # Only start with: docker compose --profile run up helm-runner
+
+volumes:
+  benchmark_data:
+    driver: local
+  cache_data:
+    driver: local
