@@ -1,0 +1,53 @@
+# Version control
+.git
+.github
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.mypy_cache
+.pytest_cache
+venv
+.venv
+prod_env
+
+# Node
+helm-frontend/node_modules
+
+# IDE
+.idea
+.vscode
+*.swp
+
+# OS
+.DS_Store
+.nfs*
+
+# Build artifacts
+build
+dist
+benchmark_output
+www
+
+# Data & logs
+data/
+*.log
+*.out
+*.jsonl
+deploy.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Documentation build
+docs/_build
+site/
+
+# Lock files except uv.lock
+*.lock
+!uv.lock
+!helm-frontend/yarn.lock

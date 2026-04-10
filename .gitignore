@@ -51,3 +51,27 @@ notes.otl
 .nfs*
 
 node_modules
+
+# Environment files (keep .env.example tracked)
+.env
+.env.local
+.env.*.local
+
+# Docker
+docker-compose.override.yml
+
+# Deployment
+deploy.log
+
+# Data directories
+/data/
+/benchmark_output/
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Distribution
+dist/
